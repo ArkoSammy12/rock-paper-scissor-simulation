@@ -7,6 +7,7 @@ public class Simulation {
     public static final int MAX_X_POS = 130;
     public static final int MAX_Y_POS = 35;
     public static final long FRAME_DELAY = 1 * 1;
+    public static final int SPAWN_PERCENTAGE = 45;
     private final GameScreen screen;
     private final List<SimObject> mainObjectList = new ArrayList<>();
     private final List<SimObject> bufferList = new ArrayList<>();
@@ -21,7 +22,7 @@ public class Simulation {
 
         for (int i = 0; i < MAX_X_POS; i++) {
             for (int j = 0; j < MAX_Y_POS; j++) {
-                int k = random.nextInt(10);
+                int k = random.nextInt(SPAWN_PERCENTAGE);
 
                 if (k == 0) {
                     SimObject simObject = new SimObject(i, j);
@@ -30,14 +31,32 @@ public class Simulation {
                 }
             }
         }
+
+        /*
+         * 
+         * SimObject upObject = new SimObject(15, 29);
+         * upObject.setYVelocity(-1); // Upward velocity
+         * upObject.setXVelocity(0);
+         * mainObjectList.add(upObject);
+         * bufferList.add(upObject.copy());
+         * 
+         * SimObject sideObject = new SimObject(0, 15);
+         * sideObject.setXVelocity(1); // Sideways velocity
+         * sideObject.setYVelocity(0);
+         * mainObjectList.add(sideObject);
+         * bufferList.add(sideObject.copy());
+         */
     }
 
     public void startLoop() throws InterruptedException {
         while (true) {
             updateObjectPositions();
             handleCollisions();
+            mainObjectList.clear();
+            mainObjectList.addAll(bufferList);
             displayObjects();
-            updateLists();
+            this.bufferList.clear();
+            this.bufferList.addAll(this.mainObjectList.stream().map(SimObject::copy).toList());
         }
     }
 
