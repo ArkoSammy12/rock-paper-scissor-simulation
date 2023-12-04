@@ -56,7 +56,7 @@ public class Simulation {
     private void handleClippings() {
         for (SimObject object : this.mainObjectList) {
             if (isCollidingWithObject(object)) {
-                resolveClipping(object);(object);
+                resolveClipping(object);
             }
         }
     }
