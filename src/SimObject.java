@@ -3,27 +3,33 @@ import java.util.Random;
 
 public class SimObject {
 
+    public static final int MAX_VELOCITY = 1;
+    public static final int MIN_VELOCITY = -1;
+
     private SimObjectType type;
     private int xPos;
     private int yPos;
-    private Direction direction = Direction.getRandomDirection();
+    private int[] velocity = new int[2];
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof SimObject object)) return false;
-        return xPos == object.xPos && yPos == object.yPos && getType() == object.getType() && getDirection() == object.getDirection();
+        if (this == o)
+            return true;
+        if (!(o instanceof SimObject object))
+            return false;
+        return xPos == object.xPos && yPos == object.yPos && getType() == object.getType()
+                && getVelocity()[0] == object.getVelocity()[0] && getVelocity()[1] == object.getVelocity()[1];
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getType(), xPos, yPos, getDirection());
+        return Objects.hash(getType(), xPos, yPos, getVelocity());
     }
 
-    public SimObject(int x, int y){
+    public SimObject(int x, int y) {
         Random random = new Random();
-        int i = random.nextInt(1, 4);
-        switch(i){
+        int i = random.nextInt(3) + 1;
+        switch (i) {
             case 1:
                 this.type = SimObjectType.ROCK;
                 break;
@@ -36,75 +42,147 @@ public class SimObject {
         }
         this.xPos = x;
         this.yPos = y;
+        do {
+            this.velocity[0] = random.nextInt((MAX_VELOCITY - (MIN_VELOCITY)) + 1) + (MIN_VELOCITY);
+        } while (this.velocity[0] == 0);
+
+        do {
+            this.velocity[1] = random.nextInt((MAX_VELOCITY - (MIN_VELOCITY)) + 1) + (MIN_VELOCITY);
+        } while (this.velocity[1] == 0);
+
     }
 
-
-    public void setDirection(Direction direction){
-        this.direction = direction;
-    }
-
-
-    public void setType(SimObjectType type){
+    public void setType(SimObjectType type) {
         this.type = type;
     }
 
-    public int getXPos(){
+    public int getXPos() {
         return this.xPos;
     }
 
-    public int getYPos(){
+    public int getYPos() {
         return this.yPos;
     }
 
-    public SimObjectType getType(){
+    public SimObjectType getType() {
         return this.type;
     }
 
-    public Direction getDirection(){
-        return this.direction;
+    public void setXPosition(int x) {
+        this.xPos = x;
+    }
+
+    public void setYPosition(int y) {
+        this.yPos = y;
+    }
+
+    public void setXVelocity(int x) {
+        this.velocity[0] = x;
+    }
+
+    public void setYVelocity(int y) {
+        this.velocity[1] = y;
+    }
+
+    public int[] getVelocity() {
+        return this.velocity;
+    }
+
+    public static int[] decrementVector(int[] vector) {
+
+        int x = vector[0] > 0 ? vector[0]-- : vector[0]++;
+        int y = vector[1] > 0 ? vector[1]-- : vector[1]++;
+
+        return new int[] { x, y };
+
     }
 
     public SimObject copy() {
         SimObject copy = new SimObject(this.xPos, this.yPos);
-        copy.setDirection(this.direction);
-        copy.setType(this.type);
+        copy.setType(this.getType());
+        copy.setXVelocity(this.getVelocity()[0]);
+        copy.setYVelocity(this.getVelocity()[1]);
+        ;
         return copy;
     }
 
     public void tryMove(SimObject collidingObject) {
-        int newX = this.xPos + this.getDirection().getVector()[0];
-        int newY = this.yPos + this.getDirection().getVector()[1];
 
-        boolean movingToOutOfBounds = Direction.isDirectionOutOfBounds(this.xPos, this.yPos, direction);
-        
+        int[] moveVector = this.getVelocity();
+        int newX = this.xPos + moveVector[0];
+        int newY = this.yPos + moveVector[1];
+
+        if (collidingObject != null) {
+            SimObjectType newType = this.getType().getWinningType(collidingObject.getType());
+            this.setType(newType);
+            int newXComp = Math.clamp((this.velocity[0] + collidingObject.getVelocity()[0]), MIN_VELOCITY,
+                    MAX_VELOCITY);
+            int newYComp = Math.clamp((this.velocity[1] + collidingObject.getVelocity()[1]), MIN_VELOCITY,
+                    MAX_VELOCITY);
+            newXComp = newXComp > 0 ? Math.ceilDivExact(newXComp, 2) : Math.floorDivExact(newXComp, 2);
+            newYComp = newYComp > 0 ? Math.ceilDivExact(newYComp, 2) : Math.floorDivExact(newYComp, 2);
+
+            if (newXComp == 0 && newYComp == 0) {
+
+                this.velocity[0] *= -1;
+                this.velocity[1] *= -1;
+
+            } else {
+
+                this.velocity[0] = newXComp;
+                this.velocity[1] = newYComp;
+
+            }
+
+            collidingObject.setType(newType);
+            newX = this.xPos + this.getVelocity()[0];
+            newY = this.yPos + this.getVelocity()[1];
+
+        }
+
+        boolean movingToOutOfBounds = isDirectionOutOfBounds(this.xPos, this.yPos, this.getVelocity());
+
+        if (movingToOutOfBounds) {
+
+            int xComp = Math.abs(moveVector[0]);
+            int yComp = Math.abs(moveVector[1]);
+
+            while (xComp > 0 && yComp > 0) {
+
+                int moveX = moveVector[0] == 0 ? 0 : moveVector[0] > 0 ? xComp : xComp * -1;
+                int moveY = moveVector[1] == 0 ? 0 : moveVector[1] > 0 ? yComp : yComp * -1;
+
+                if (!isDirectionOutOfBounds(this.xPos, this.yPos, new int[] { moveX, moveY })) {
+
+                    moveVector = new int[] { moveX, moveY };
+                    movingToOutOfBounds = false;
+                    break;
+
+                }
+
+                xComp--;
+                yComp--;
+
+            }
+
+        }
+
         if (movingToOutOfBounds) {
             boolean outOfBoundsOverMaxX = newX >= Simulation.MAX_X_POS;
             boolean outOfBoundsOverMinX = newX < 0;
             boolean outOfBoundsOverMaxY = newY >= Simulation.MAX_Y_POS;
             boolean outOfBoundsOverMinY = newY < 0;
-            Direction bounceDirection = this.getDirection().getBounceDirection(outOfBoundsOverMaxX, outOfBoundsOverMinX, outOfBoundsOverMaxY, outOfBoundsOverMinY);
-            newX = this.xPos + bounceDirection.getVector()[0];
-            newY = this.yPos + bounceDirection.getVector()[1];
-            this.setDirection(bounceDirection);
-        } else if (collidingObject != null) {
-            SimObjectType newType = this.getType().getWinningType(collidingObject.getType());
-            this.setType(newType);
-            boolean outOfBoundsOverMaxX = this.getDirection() == Direction.RIGHT || this.getDirection() == Direction.UP_RIGHT || this.getDirection() == Direction.DOWN_RIGHT;
-            boolean outOfBoundsOverMinX = this.getDirection() == Direction.LEFT || this.getDirection() == Direction.UP_LEFT || this.getDirection() == Direction.DOWN_LEFT;
-            boolean outOfBoundsOverMaxY = this.getDirection() == Direction.UP || this.getDirection() == Direction.UP_RIGHT || this.getDirection() == Direction.UP_LEFT;
-            boolean outOfBoundsOverMinY = this.getDirection() == Direction.DOWN || this.getDirection() == Direction.DOWN_RIGHT || this.getDirection() == Direction.DOWN_LEFT;
-            //TODO: Fix this
-            Direction bounceDirection = this.getDirection().combineDirection(collidingObject.getDirection());
-            if(bounceDirection == null || Direction.isDirectionOutOfBounds(this.getXPos(), this.getYPos(), bounceDirection)) {
-                bounceDirection = this.getDirection().getBounceDirection(outOfBoundsOverMaxX, outOfBoundsOverMinX, outOfBoundsOverMaxY, outOfBoundsOverMinY);
+
+            if (outOfBoundsOverMaxX || outOfBoundsOverMinX) {
+                this.velocity[0] *= -1;
+            }
+            if (outOfBoundsOverMaxY || outOfBoundsOverMinY) {
+                this.velocity[1] *= -1;
             }
 
-            this.setDirection(bounceDirection);
-            collidingObject.setType(newType);
-            newX = this.xPos + bounceDirection.getVector()[0];
-            newY = this.yPos + bounceDirection.getVector()[1];
+            newX = this.xPos + this.getVelocity()[0];
+            newY = this.yPos + this.getVelocity()[1];
 
-            
         }
 
         this.xPos = newX;
@@ -112,45 +190,53 @@ public class SimObject {
 
     }
 
+    public static boolean isDirectionOutOfBounds(int x, int y, int[] velocity) {
 
-    public enum SimObjectType{
+        int newX = x + velocity[0];
+        int newY = y + velocity[1];
+
+        return newX >= Simulation.MAX_X_POS || newX < 0 || newY >= Simulation.MAX_Y_POS || newY < 0;
+
+    }
+
+    public enum SimObjectType {
         SCISSOR('V'),
         ROCK('O'),
         PAPER('E');
 
         private final char charId;
 
-        SimObjectType(char charId){
+        SimObjectType(char charId) {
             this.charId = charId;
         }
 
-        public char getCharId(){
+        public char getCharId() {
             return this.charId;
         }
 
-        public SimObjectType getWinningType(SimObjectType other){
+        public SimObjectType getWinningType(SimObjectType other) {
 
             if (this == SimObjectType.ROCK) {
 
-                return switch(other){
+                return switch (other) {
 
                     case ROCK, SCISSOR -> ROCK;
                     case PAPER -> PAPER;
 
                 };
 
-            }  else if (this == SimObjectType.PAPER){
+            } else if (this == SimObjectType.PAPER) {
 
-                return switch(other){
+                return switch (other) {
 
                     case ROCK, PAPER -> PAPER;
                     case SCISSOR -> SCISSOR;
 
                 };
 
-            } else if (this == SimObjectType.SCISSOR){
+            } else if (this == SimObjectType.SCISSOR) {
 
-                return switch (other){
+                return switch (other) {
 
                     case ROCK -> ROCK;
                     case PAPER, SCISSOR -> SCISSOR;
@@ -164,143 +250,5 @@ public class SimObject {
         }
 
     }
-
-    public enum Direction{
-        UP(new int[]{0, 1}),
-        RIGHT(new int[]{1, 0}),
-        DOWN(new int[]{0, -1}),
-        LEFT(new int[]{-1, 0}),
-        UP_RIGHT(new int[]{1, -1}),
-        UP_LEFT(new int[]{-1, -1}),
-        DOWN_RIGHT(new int[]{1, 1}),
-        DOWN_LEFT(new int[]{-1, 1});
-
-        private final int[] vector;
-
-         Direction(int[] vector){
-            this.vector = vector;
-        }
-
-        public int[] getVector(){
-             return this.vector;
-        }
-
-        public static Direction fromVector(int[] vector){
-
-            for(Direction direction : Direction.values()){
-
-                if(direction.getVector()[0] == vector[0] && direction.getVector()[1] == vector[1]){
-                    return direction;
-                }
-
-            }
-
-            throw new IllegalArgumentException(vector[0] + " " + vector[1]);
-
-        }
-
-        public Direction combineDirection(Direction direction){
-
-            int newX = Math.clamp(this.getVector()[0] + direction.getVector()[0], -1, 1);
-            int newY = Math.clamp(this.getVector()[1] + direction.getVector()[1], -1, 1);
-
-            if(newX == 0 && newY == 0){
-                return null;
-            }
-
-            return Direction.fromVector(new int[]{newX, newY});
-
-        }
-
-        public static boolean isDirectionOutOfBounds(int x, int y, Direction direction){
-
-            int newX = x + direction.getVector()[0];
-            int newY = y + direction.getVector()[1];
-
-            return newX >= Simulation.MAX_X_POS || newX < 0 || newY >= Simulation.MAX_Y_POS || newY < 0;
-
-        }
-
-        public Direction getBounceDirection(boolean outOfBoundsOverMaxX, boolean outOfBoundsOverMinX, boolean outOfBoundsOverMaxY, boolean outOfBoundsOverMinY) {
-                    
-            boolean outOfBoundsFromCorner = (outOfBoundsOverMaxX && outOfBoundsOverMaxY) || (outOfBoundsOverMaxX && outOfBoundsOverMinY) || (outOfBoundsOverMinX && outOfBoundsOverMinY) || (outOfBoundsOverMinX && outOfBoundsOverMaxY);
-
-            if(outOfBoundsFromCorner){
-                return switch (this) {
-                    case UP -> DOWN;
-                    case DOWN -> UP;
-                    case RIGHT -> LEFT;
-                    case LEFT -> RIGHT;
-                    case UP_RIGHT -> DOWN_LEFT;
-                    case UP_LEFT -> DOWN_RIGHT;
-                    case DOWN_RIGHT -> UP_LEFT;
-                    case DOWN_LEFT -> UP_RIGHT;
-                };
-            } else if (outOfBoundsOverMaxX) {
-
-                return switch (this) {
-                    case UP -> DOWN;
-                    case DOWN -> UP;
-                    case RIGHT -> LEFT;
-                    case LEFT -> RIGHT;
-                    case UP_RIGHT -> UP_LEFT;
-                    case UP_LEFT, DOWN_LEFT -> DOWN_RIGHT;
-                    case DOWN_RIGHT -> DOWN_LEFT;
-                };
-            } else if (outOfBoundsOverMinX) {
-
-                return switch (this) {
-                    case UP -> DOWN;
-                    case DOWN -> UP;
-                    case RIGHT -> LEFT;
-                    case LEFT -> RIGHT;
-                    case UP_RIGHT -> UP_LEFT;
-                    case UP_LEFT -> UP_RIGHT;
-                    case DOWN_RIGHT -> DOWN_LEFT;
-                    case DOWN_LEFT -> DOWN_RIGHT;
-                };
-
-            } else if (outOfBoundsOverMaxY) {
-
-                return switch (this) {
-                    case UP -> DOWN;
-                    case DOWN -> UP;
-                    case RIGHT -> LEFT;
-                    case LEFT -> RIGHT;
-                    case UP_RIGHT, DOWN_LEFT -> UP_LEFT;
-                    case UP_LEFT, DOWN_RIGHT -> UP_RIGHT;
-                };
-
-            } else if (outOfBoundsOverMinY){
-
-                return switch (this) {
-                    case UP -> DOWN;
-                    case DOWN -> UP;
-                    case RIGHT -> LEFT;
-                    case LEFT -> RIGHT;
-                    case UP_RIGHT -> DOWN_RIGHT;
-                    case UP_LEFT -> DOWN_LEFT;
-                    case DOWN_RIGHT -> UP_RIGHT;
-                    case DOWN_LEFT -> UP_LEFT;
-                };               
-
-            } else {
-                throw new IllegalArgumentException();
-            }
-
-
-        }
-
-        public static Direction getRandomDirection(){
-
-            Random random = new Random();
-
-            int i = random.nextInt(0, Direction.values().length - 1);
-            return Direction.values()[i];
-
-        }
-
-    }
-
 
 }

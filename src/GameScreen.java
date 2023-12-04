@@ -26,17 +26,22 @@ public class GameScreen {
 
     }
 
-public void display() throws InterruptedException {
-    for (int j = 0; j < Simulation.MAX_Y_POS; j++) {
-        for (int i = 0; i < Simulation.MAX_X_POS; i++) {
-            System.out.print(matrixScreen[j][i]);
-        }
-        System.out.println();
-    }
-    Thread.sleep(Simulation.FRAME_DELAY);
-    clearConsole();
-}
+    public void display() throws InterruptedException {
+        int k = 0;
+        for (int j = 0; j < Simulation.MAX_Y_POS; j++) {
+            for (int i = 0; i < Simulation.MAX_X_POS; i++) {
+                System.out.print(matrixScreen[j][i]);
+                if (matrixScreen[j][i] != ' ') {
+                    k++;
+                }
 
+            }
+            System.out.println();
+        }
+        System.out.println(k);
+        Thread.sleep(Simulation.FRAME_DELAY);
+        clearConsole();
+    }
 
     public static void clearConsole() {
 
