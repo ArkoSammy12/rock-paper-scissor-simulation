@@ -39,7 +39,7 @@ public class Simulation {
             updateObjectPositions();
             mainObjectList.clear();
             mainObjectList.addAll(this.bufferList.stream().map(SimObject::copy).toList());
-            handleCollisions();
+            handleClippings();
             displayObjects();
             this.bufferList.clear();
             this.bufferList.addAll(this.mainObjectList.stream().map(SimObject::copy).toList());
@@ -53,15 +53,15 @@ public class Simulation {
         }
     }
 
-    private void handleCollisions() {
+    private void handleClippings() {
         for (SimObject object : this.mainObjectList) {
-            if (isColliding(object)) {
-                resolveCollision(object);
+            if (isCollidingWithObject(object)) {
+                resolveClipping(object);(object);
             }
         }
     }
 
-    private boolean isColliding(SimObject object) {
+    private boolean isCollidingWithObject(SimObject object) {
         for (SimObject subObject : this.mainObjectList) {
             if (object.getXPos() == subObject.getXPos() && object.getYPos() == subObject.getYPos()
                     && !object.equals(subObject)) {
@@ -71,7 +71,7 @@ public class Simulation {
         return false;
     }
 
-    private void resolveCollision(SimObject object) {
+    private void resolveClipping(SimObject object) {
         int m = Math.max(MAX_Y_POS, MAX_X_POS);
         int i = 1;
 
@@ -81,7 +81,7 @@ public class Simulation {
                     new int[] { object.getVelocity()[0] * -1, object.getVelocity()[1] * -1 });
 
             for (int[] tryMoveVector : moveVectors) {
-                if (tryMove(object, tryMoveVector[0] * i, tryMoveVector[1] * i)) {
+                if (tryClipOut(object, tryMoveVector[0] * i, tryMoveVector[1] * i)) {
                     return;
                 }
             }
@@ -90,7 +90,7 @@ public class Simulation {
         }
     }
 
-    private boolean tryMove(SimObject object, int deltaX, int deltaY) {
+    private boolean tryClipOut(SimObject object, int deltaX, int deltaY) {
         int newX = object.getXPos() + deltaX;
         int newY = object.getYPos() + deltaY;
 
