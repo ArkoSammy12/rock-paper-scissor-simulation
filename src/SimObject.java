@@ -105,6 +105,7 @@ public class SimObject {
         int newY = this.yPos + moveVector[1];
 
         if (collidingObject != null) {
+
             int newXComp = Math.clamp((this.velocity[0] + collidingObject.getVelocity()[0]), MIN_VELOCITY,
                     MAX_VELOCITY);
             int newYComp = Math.clamp((this.velocity[1] + collidingObject.getVelocity()[1]), MIN_VELOCITY,

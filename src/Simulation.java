@@ -33,27 +33,27 @@ public class Simulation {
         }
 
         /*
-         * 
-         * SimObject upObject = new SimObject(15, 29);
-         * upObject.setYVelocity(-1); // Upward velocity
+         * SimObject upObject = new SimObject(15, 0);
+         * upObject.setYVelocity(1); // Upward velocity
          * upObject.setXVelocity(0);
          * mainObjectList.add(upObject);
          * bufferList.add(upObject.copy());
          * 
-         * SimObject sideObject = new SimObject(0, 15);
-         * sideObject.setXVelocity(1); // Sideways velocity
+         * SimObject sideObject = new SimObject(30, 15);
+         * sideObject.setXVelocity(-1); // Sideways velocity
          * sideObject.setYVelocity(0);
          * mainObjectList.add(sideObject);
          * bufferList.add(sideObject.copy());
          */
+
     }
 
     public void startLoop() throws InterruptedException {
         while (true) {
             updateObjectPositions();
-            handleCollisions();
             mainObjectList.clear();
-            mainObjectList.addAll(bufferList);
+            mainObjectList.addAll(this.bufferList.stream().map(SimObject::copy).toList());
+            handleCollisions();
             displayObjects();
             this.bufferList.clear();
             this.bufferList.addAll(this.mainObjectList.stream().map(SimObject::copy).toList());
@@ -68,7 +68,7 @@ public class Simulation {
     }
 
     private void handleCollisions() {
-        for (SimObject object : this.bufferList) {
+        for (SimObject object : this.mainObjectList) {
             if (isColliding(object)) {
                 resolveCollision(object);
             }
@@ -76,7 +76,7 @@ public class Simulation {
     }
 
     private boolean isColliding(SimObject object) {
-        for (SimObject subObject : this.bufferList) {
+        for (SimObject subObject : this.mainObjectList) {
             if (object.getXPos() == subObject.getXPos() && object.getYPos() == subObject.getYPos()
                     && !object.equals(subObject)) {
                 return true;
@@ -90,8 +90,9 @@ public class Simulation {
         int i = 1;
 
         while (i < m) {
-            int[][] moveVectors = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -1, -1 }, { 0, -1 },
-                    { 1, -1 } };
+
+            int[][] moveVectors = generateHitboxVectors(
+                    new int[] { object.getVelocity()[0] * -1, object.getVelocity()[1] * -1 });
 
             for (int[] tryMoveVector : moveVectors) {
                 if (tryMove(object, tryMoveVector[0] * i, tryMoveVector[1] * i)) {
@@ -122,31 +123,21 @@ public class Simulation {
         int xPos = object.getXPos();
         int yPos = object.getYPos();
 
-        if (!SimObject.isDirectionOutOfBounds(xPos, yPos, object.getVelocity())) {
-            int[] moveVector = object.getVelocity();
+        int[][] moveVectors = generateHitboxVectors(new int[] { object.getVelocity()[0], object.getVelocity()[1] });
 
-            for (SimObject objectInSim : this.mainObjectList) {
-                int moveX = Math.abs(moveVector[0]);
-                int moveY = Math.abs(moveVector[1]);
+        for (int[] radialVector : moveVectors) {
 
-                while (moveX >= 0 && moveY >= 0) {
-                    int checkX = moveVector[0] == 0 ? 0 : moveVector[0] > 0 ? moveX : moveX * -1;
-                    int checkY = moveVector[1] == 0 ? 0 : moveVector[1] > 0 ? moveY : moveY * -1;
+            int searchX = xPos + radialVector[0];
+            int searchY = yPos + radialVector[1];
 
-                    int newX = xPos + checkX;
-                    int newY = yPos + checkY;
+            SimObject collidingObject = getObjectAt(searchX, searchY);
 
-                    if (!objectInSim.equals(object)) {
-                        if ((newX == objectInSim.getXPos() && newY == objectInSim.getYPos())
-                                || (xPos == objectInSim.getXPos() && yPos == objectInSim.getYPos())) {
-                            return objectInSim;
-                        }
-                    }
+            if (collidingObject != null) {
 
-                    moveX--;
-                    moveY--;
-                }
+                return collidingObject;
+
             }
+
         }
 
         return null;
@@ -168,10 +159,27 @@ public class Simulation {
         this.screen.clearDisplay();
     }
 
-    private void updateLists() {
-        mainObjectList.clear();
-        mainObjectList.addAll(bufferList);
-        this.bufferList.clear();
-        this.bufferList.addAll(this.mainObjectList.stream().map(SimObject::copy).toList());
+    private static int[][] generateHitboxVectors(int[] direction) {
+
+        ArrayList<int[]> moveVectors = new ArrayList<>();
+
+        int xDir = direction[0] == 0 ? 0 : direction[0] > 0 ? 1 : -1;
+        int yDir = direction[1] == 0 ? 0 : direction[1] > 0 ? 1 : -1;
+
+        double angle = Math.atan2(yDir, xDir);
+
+        moveVectors.add(new int[] { xDir, yDir });
+
+        for (int i = 0; i < 7; i++) {
+            angle -= Math.toRadians(45);
+
+            int x = (int) Math.round(Math.cos(angle));
+            int y = (int) Math.round(Math.sin(angle));
+
+            moveVectors.add(new int[] { x, y });
+        }
+
+        return moveVectors.toArray(new int[8][2]);
     }
+
 }
