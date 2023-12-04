@@ -146,6 +146,8 @@ public class SimObject {
 
                 if (!isDirectionOutOfBounds(this.xPos, this.yPos, new int[] { moveX, moveY })) {
 
+                    newX = this.xPos + moveX;
+                    newY = this.yPos + moveY;
                     movingToOutOfBounds = false;
                     break;
 
