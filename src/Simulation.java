@@ -32,20 +32,6 @@ public class Simulation {
             }
         }
 
-        /*
-         * SimObject upObject = new SimObject(15, 0);
-         * upObject.setYVelocity(1); // Upward velocity
-         * upObject.setXVelocity(0);
-         * mainObjectList.add(upObject);
-         * bufferList.add(upObject.copy());
-         * 
-         * SimObject sideObject = new SimObject(30, 15);
-         * sideObject.setXVelocity(-1); // Sideways velocity
-         * sideObject.setYVelocity(0);
-         * mainObjectList.add(sideObject);
-         * bufferList.add(sideObject.copy());
-         */
-
     }
 
     public void startLoop() throws InterruptedException {

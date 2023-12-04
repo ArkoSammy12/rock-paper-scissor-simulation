@@ -4,8 +4,8 @@ import java.util.Random;
 
 public class SimObject {
 
-    public static final int MAX_VELOCITY = 3;
-    public static final int MIN_VELOCITY = -3;
+    public static final int MAX_VELOCITY = 2;
+    public static final int MIN_VELOCITY = -2;
 
     private SimObjectType type;
     private int xPos;
@@ -106,10 +106,9 @@ public class SimObject {
 
         if (collidingObject != null) {
 
-            int newXComp = Math.clamp((this.velocity[0] + collidingObject.getVelocity()[0]), MIN_VELOCITY,
-                    MAX_VELOCITY);
-            int newYComp = Math.clamp((this.velocity[1] + collidingObject.getVelocity()[1]), MIN_VELOCITY,
-                    MAX_VELOCITY);
+            int newXComp = this.velocity[0] + collidingObject.getVelocity()[0];
+            int newYComp = this.velocity[1] + collidingObject.getVelocity()[1];
+
             newXComp = newXComp > 0 ? Math.ceilDivExact(newXComp, 2) : Math.floorDivExact(newXComp, 2);
             newYComp = newYComp > 0 ? Math.ceilDivExact(newYComp, 2) : Math.floorDivExact(newYComp, 2);
 
