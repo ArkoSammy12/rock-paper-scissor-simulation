@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
 
@@ -9,7 +10,7 @@ public class SimObject {
     private SimObjectType type;
     private int xPos;
     private int yPos;
-    private int[] velocity = new int[2];
+    private final int[] velocity = new int[2];
 
     @Override
     public boolean equals(Object o) {
@@ -23,7 +24,7 @@ public class SimObject {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getType(), xPos, yPos, getVelocity());
+        return Objects.hash(getType(), xPos, yPos, Arrays.hashCode(getVelocity()));
     }
 
     public SimObject(int x, int y) {
@@ -88,21 +89,12 @@ public class SimObject {
         return this.velocity;
     }
 
-    public static int[] decrementVector(int[] vector) {
-
-        int x = vector[0] > 0 ? vector[0]-- : vector[0]++;
-        int y = vector[1] > 0 ? vector[1]-- : vector[1]++;
-
-        return new int[] { x, y };
-
-    }
-
     public SimObject copy() {
         SimObject copy = new SimObject(this.xPos, this.yPos);
         copy.setType(this.getType());
         copy.setXVelocity(this.getVelocity()[0]);
         copy.setYVelocity(this.getVelocity()[1]);
-        ;
+
         return copy;
     }
 
@@ -154,7 +146,6 @@ public class SimObject {
 
                 if (!isDirectionOutOfBounds(this.xPos, this.yPos, new int[] { moveX, moveY })) {
 
-                    moveVector = new int[] { moveX, moveY };
                     movingToOutOfBounds = false;
                     break;
 

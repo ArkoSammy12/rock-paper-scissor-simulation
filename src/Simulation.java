@@ -7,7 +7,7 @@ public class Simulation {
     public static final int MAX_X_POS = 30;
     public static final int MAX_Y_POS = 30;
     public static final long FRAME_DELAY = 10 * 1;
-    private GameScreen screen;
+    private final GameScreen screen;
     private final List<SimObject> mainObjectList = new ArrayList<>();
     private final List<SimObject> bufferList = new ArrayList<>();
 
@@ -70,7 +70,7 @@ public class Simulation {
         int m = Math.max(MAX_Y_POS, MAX_X_POS);
         int i = 1;
 
-        x: while (i < m) {
+        while (i < m) {
             int[][] moveVectors = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -1, -1 }, { 0, -1 },
                     { 1, -1 } };
 
@@ -110,7 +110,7 @@ public class Simulation {
                 int moveX = Math.abs(moveVector[0]);
                 int moveY = Math.abs(moveVector[1]);
 
-                while (moveX >= 0 && moveX >= 0) {
+                while (moveX >= 0 && moveY >= 0) {
                     int checkX = moveVector[0] == 0 ? 0 : moveVector[0] > 0 ? moveX : moveX * -1;
                     int checkY = moveVector[1] == 0 ? 0 : moveVector[1] > 0 ? moveY : moveY * -1;
 
@@ -143,7 +143,7 @@ public class Simulation {
     }
 
     private void displayObjects() throws InterruptedException {
-        mainObjectList.forEach(object -> this.screen.setScreenElement(object));
+        mainObjectList.forEach(this.screen::setScreenElement);
         System.out.println(mainObjectList.size());
         this.screen.display();
         this.screen.clearDisplay();
