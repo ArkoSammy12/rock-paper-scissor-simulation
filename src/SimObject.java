@@ -4,8 +4,8 @@ import java.util.Random;
 
 public class SimObject {
 
-    public static final int MAX_VELOCITY = 1;
-    public static final int MIN_VELOCITY = -1;
+    public static final int MAX_VELOCITY = 5;
+    public static final int MIN_VELOCITY = -5;
 
     private SimObjectType type;
     private int xPos;

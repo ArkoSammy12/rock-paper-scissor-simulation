@@ -4,9 +4,9 @@ import java.util.Random;
 
 public class Simulation {
 
-    public static final int MAX_X_POS = 30;
-    public static final int MAX_Y_POS = 30;
-    public static final long FRAME_DELAY = 10 * 1;
+    public static final int MAX_X_POS = 125;
+    public static final int MAX_Y_POS = 25;
+    public static final long FRAME_DELAY = 11 * 1;
     private final GameScreen screen;
     private final List<SimObject> mainObjectList = new ArrayList<>();
     private final List<SimObject> bufferList = new ArrayList<>();
