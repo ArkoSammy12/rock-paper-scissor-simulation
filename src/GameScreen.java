@@ -28,6 +28,7 @@ public class GameScreen {
 
     public void display() throws InterruptedException {
         int k = 0;
+        System.out.println(Simulation.TICK_COUNT);
         for (int j = 0; j < Simulation.MAX_Y_POS; j++) {
             for (int i = 0; i < Simulation.MAX_X_POS; i++) {
                 System.out.print(matrixScreen[j][i]);

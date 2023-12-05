@@ -4,10 +4,11 @@ import java.util.Random;
 
 public class Simulation {
 
-    public static final int MAX_X_POS = 130;
-    public static final int MAX_Y_POS = 35;
+    public static final int MAX_X_POS = 140;
+    public static final int MAX_Y_POS = 40;
     public static final long FRAME_DELAY = 1 * 1;
-    public static final int SPAWN_PERCENTAGE = 45;
+    public static final int SPAWN_PERCENTAGE = 50;
+    public static int TICK_COUNT = 0;
     private final GameScreen screen;
     private final List<SimObject> mainObjectList = new ArrayList<>();
     private final List<SimObject> bufferList = new ArrayList<>();
@@ -43,6 +44,7 @@ public class Simulation {
             displayObjects();
             this.bufferList.clear();
             this.bufferList.addAll(this.mainObjectList.stream().map(SimObject::copy).toList());
+            TICK_COUNT++;
         }
     }
 
@@ -56,7 +58,7 @@ public class Simulation {
     private void handleClippings() {
         for (SimObject object : this.mainObjectList) {
             if (isCollidingWithObject(object)) {
-                resolveClipping(object);
+                tryClipOut(object);
             }
         }
     }
@@ -71,38 +73,31 @@ public class Simulation {
         return false;
     }
 
-    private void resolveClipping(SimObject object) {
-        int m = Math.max(MAX_Y_POS, MAX_X_POS);
-        int i = 1;
+    private boolean tryClipOut(SimObject object) {
 
-        while (i < m) {
+        int xPos = object.getXPos();
+        int yPos = object.getYPos();
 
-            int[][] moveVectors = generateHitboxVectors(
-                    new int[] { object.getVelocity()[0] * -1, object.getVelocity()[1] * -1 });
+        int maxRadius = Math.max(MAX_X_POS, MAX_Y_POS);
 
-            for (int[] tryMoveVector : moveVectors) {
-                if (tryClipOut(object, tryMoveVector[0] * i, tryMoveVector[1] * i)) {
-                    return;
+        for (int r = 0; r <= maxRadius; r++) {
+
+            for (int x = xPos - r; x <= xPos + r; x++) {
+                for (int y = yPos - r; y <= yPos + r; y++) {
+                    int d = (x - xPos) * (x - xPos) + (y - yPos) * (y - yPos);
+                    boolean isWithinBounds = x >= 0 && x < MAX_X_POS && y >= 0 && y < MAX_Y_POS;
+                    if (d <= r * r && isWithinBounds && getObjectAt(x, y) == null) {
+                        object.setXPosition(x);
+                        object.setYPosition(y);
+                        return true;
+                    }
                 }
             }
 
-            i++;
-        }
-    }
-
-    private boolean tryClipOut(SimObject object, int deltaX, int deltaY) {
-        int newX = object.getXPos() + deltaX;
-        int newY = object.getYPos() + deltaY;
-
-        if (!SimObject.isDirectionOutOfBounds(object.getXPos(), object.getYPos(), new int[] { deltaX, deltaY })
-                && this.getObjectAt(newX, newY) == null) {
-
-            object.setXPosition(newX);
-            object.setYPosition(newY);
-            return true;
         }
 
         return false;
+
     }
 
     private SimObject getCollidingObject(SimObject object) {
