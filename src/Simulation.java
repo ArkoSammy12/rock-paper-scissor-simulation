@@ -7,7 +7,7 @@ public class Simulation {
     public static final int MAX_X_POS = 140;
     public static final int MAX_Y_POS = 40;
     public static final long FRAME_DELAY = 1 * 1;
-    public static final int SPAWN_PERCENTAGE = 50;
+    public static final int SPAWN_PERCENTAGE = 27;
     public static int TICK_COUNT = 0;
     private final GameScreen screen;
     private final List<SimObject> mainObjectList = new ArrayList<>();
@@ -20,6 +20,20 @@ public class Simulation {
 
     private void initializeObjects() {
         Random random = new Random();
+
+        /*
+         * SimObject sideways = new SimObject(0, 15);
+         * sideways.setXVelocity(1);
+         * sideways.setYVelocity(0);
+         * mainObjectList.add(sideways);
+         * bufferList.add(sideways.copy());
+         * 
+         * SimObject vertical = new SimObject(15, 29);
+         * vertical.setXVelocity(0);
+         * vertical.setYVelocity(-1);
+         * mainObjectList.add(vertical);
+         * bufferList.add(vertical.copy());
+         */
 
         for (int i = 0; i < MAX_X_POS; i++) {
             for (int j = 0; j < MAX_Y_POS; j++) {
@@ -57,13 +71,13 @@ public class Simulation {
 
     private void handleClippings() {
         for (SimObject object : this.mainObjectList) {
-            if (isCollidingWithObject(object)) {
+            if (isClippingWithObject(object)) {
                 tryClipOut(object);
             }
         }
     }
 
-    private boolean isCollidingWithObject(SimObject object) {
+    private boolean isClippingWithObject(SimObject object) {
         for (SimObject subObject : this.mainObjectList) {
             if (object.getXPos() == subObject.getXPos() && object.getYPos() == subObject.getYPos()
                     && !object.equals(subObject)) {
@@ -73,36 +87,42 @@ public class Simulation {
         return false;
     }
 
-    private boolean tryClipOut(SimObject object) {
+    private void tryClipOut(SimObject object) {
 
         int xPos = object.getXPos();
         int yPos = object.getYPos();
 
-        int maxRadius = Math.max(MAX_X_POS, MAX_Y_POS);
+        int[][] clipOutVectors = generateClipOutVectors(object.getVelocity());
 
-        for (int r = 0; r <= maxRadius; r++) {
+        for (int[] clipOutVector : clipOutVectors) {
 
-            for (int x = xPos - r; x <= xPos + r; x++) {
-                for (int y = yPos - r; y <= yPos + r; y++) {
-                    int d = (x - xPos) * (x - xPos) + (y - yPos) * (y - yPos);
-                    boolean isWithinBounds = x >= 0 && x < MAX_X_POS && y >= 0 && y < MAX_Y_POS;
-                    if (d <= r * r && isWithinBounds && getObjectAt(x, y) == null) {
-                        object.setXPosition(x);
-                        object.setYPosition(y);
-                        return true;
-                    }
-                }
+            int newX = xPos + clipOutVector[0];
+            int newY = yPos + clipOutVector[1];
+
+            SimObject objectAt = getObjectFromMain(newX, newY);
+
+            if (objectAt == null && !SimObject.isDirectionOutOfBounds(xPos, yPos, clipOutVector)) {
+
+                object.setXPosition(newX);
+                object.setYPosition(newY);
+
+                return;
+
             }
 
         }
-
-        return false;
 
     }
 
     private SimObject getCollidingObject(SimObject object) {
         int xPos = object.getXPos();
         int yPos = object.getYPos();
+
+        SimObject clippingObject = getObjectFromBuffer(xPos, yPos);
+
+        if (clippingObject != null && !clippingObject.equals(object)) {
+            return clippingObject;
+        }
 
         int[][] moveVectors = generateHitboxVectors(new int[] { object.getVelocity()[0], object.getVelocity()[1] });
 
@@ -111,9 +131,9 @@ public class Simulation {
             int searchX = xPos + radialVector[0];
             int searchY = yPos + radialVector[1];
 
-            SimObject collidingObject = getObjectAt(searchX, searchY);
+            SimObject collidingObject = getObjectFromBuffer(searchX, searchY);
 
-            if (collidingObject != null) {
+            if (collidingObject != null && !collidingObject.equals(object)) {
 
                 return collidingObject;
 
@@ -124,8 +144,17 @@ public class Simulation {
         return null;
     }
 
-    private SimObject getObjectAt(int x, int y) {
+    private SimObject getObjectFromBuffer(int x, int y) {
         for (SimObject object : this.bufferList) {
+            if (x == object.getXPos() && y == object.getYPos()) {
+                return object;
+            }
+        }
+        return null;
+    }
+
+    private SimObject getObjectFromMain(int x, int y) {
+        for (SimObject object : this.mainObjectList) {
             if (x == object.getXPos() && y == object.getYPos()) {
                 return object;
             }
@@ -141,26 +170,66 @@ public class Simulation {
     }
 
     private static int[][] generateHitboxVectors(int[] direction) {
+        ArrayList<int[]> moveVectors = new ArrayList<>();
+
+        int xDir = direction[0] == 0 ? 0 : direction[0] > 0 ? 1 : -1;
+        int yDir = direction[1] == 0 ? 0 : direction[1] > 0 ? 1 : -1;
+
+        double originalAngle = Math.atan2(yDir, xDir);
+
+        moveVectors.add(new int[] { xDir, yDir });
+
+        for (int i = 1; i <= 0; i++) {
+            // Calculate left vector
+            double left = originalAngle - Math.toRadians(45 * i);
+            int xLeft = (int) Math.round(Math.cos(left));
+            int yLeft = (int) Math.round(Math.sin(left));
+            moveVectors.add(new int[] { xLeft, yLeft });
+
+            // Calculate right vector
+            double right = originalAngle + Math.toRadians(45 * i);
+            int xRight = (int) Math.round(Math.cos(right));
+            int yRight = (int) Math.round(Math.sin(right));
+            moveVectors.add(new int[] { xRight, yRight });
+        }
+
+        // moveVectors.add(new int[] { xDir * -1, yDir * -1 });
+
+        return moveVectors.toArray(new int[0][0]);
+    }
+
+    private static int[][] generateClipOutVectors(int[] direction) {
 
         ArrayList<int[]> moveVectors = new ArrayList<>();
 
         int xDir = direction[0] == 0 ? 0 : direction[0] > 0 ? 1 : -1;
         int yDir = direction[1] == 0 ? 0 : direction[1] > 0 ? 1 : -1;
 
-        double angle = Math.atan2(yDir, xDir);
+        double originalAngle = Math.atan2(yDir, xDir);
 
         moveVectors.add(new int[] { xDir, yDir });
 
-        for (int i = 0; i < 7; i++) {
-            angle -= Math.toRadians(45);
+        for (int magnitude = 1; magnitude <= Math.max(MAX_X_POS, MAX_Y_POS); magnitude++) {
 
-            int x = (int) Math.round(Math.cos(angle));
-            int y = (int) Math.round(Math.sin(angle));
+            for (int i = 1; i <= 3; i++) {
+                // Calculate left vector
+                double left = originalAngle - Math.toRadians(45 * i);
+                int xLeft = (int) Math.round(Math.cos(left));
+                int yLeft = (int) Math.round(Math.sin(left));
+                moveVectors.add(new int[] { xLeft * magnitude, yLeft * magnitude });
 
-            moveVectors.add(new int[] { x, y });
+                // Calculate right vector
+                double right = originalAngle + Math.toRadians(45 * i);
+                int xRight = (int) Math.round(Math.cos(right));
+                int yRight = (int) Math.round(Math.sin(right));
+                moveVectors.add(new int[] { xRight * magnitude, yRight * magnitude });
+            }
+
+            moveVectors.add(new int[] { xDir * -1 * magnitude, yDir * -1 * magnitude });
+
         }
+        return moveVectors.toArray(new int[0][0]);
 
-        return moveVectors.toArray(new int[8][2]);
     }
 
 }
