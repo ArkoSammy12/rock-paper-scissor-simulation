@@ -5,9 +5,9 @@ import java.util.Random;
 public class Simulation {
 
     public static final int MAX_X_POS = 140;
-    public static final int MAX_Y_POS = 40;
+    public static final int MAX_Y_POS = 35;
     public static final long FRAME_DELAY = 1 * 1;
-    public static final int SPAWN_PERCENTAGE = 27;
+    public static final int SPAWN_PERCENTAGE = 29;
     public static int TICK_COUNT = 0;
     private final GameScreen screen;
     private final List<SimObject> mainObjectList = new ArrayList<>();
