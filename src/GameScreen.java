@@ -31,7 +31,20 @@ public class GameScreen {
         System.out.println(Simulation.TICK_COUNT);
         for (int j = 0; j < Simulation.MAX_Y_POS; j++) {
             for (int i = 0; i < Simulation.MAX_X_POS; i++) {
-                System.out.print(matrixScreen[j][i]);
+
+                String s = String.valueOf(matrixScreen[j][i]);
+
+                if(s.equals("O")){
+
+                    s = "\u001B[31m" + s + "\u001B[0m";
+
+                } else if (s.equals("V")){
+
+                    s = "\u001B[32m" + s + "\u001B[0m";
+
+                }
+
+                System.out.print(s);
                 if (matrixScreen[j][i] != ' ') {
                     k++;
                 }
